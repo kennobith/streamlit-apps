@@ -1,2 +1,2 @@
 pypdf2==3.0.1
-python-docx==0.2.4
+docx==0.2.4
