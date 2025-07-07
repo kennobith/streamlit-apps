@@ -1,5 +1,3 @@
-!pip install pypdf2==3.0.1
-!pip install docx==0.2.4
 import streamlit as st
 from PyPDF2 import PdfReader
 from docx import Document
