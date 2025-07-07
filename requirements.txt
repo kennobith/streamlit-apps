@@ -1,2 +1,3 @@
 pypdf2==3.0.1
 python-docx
+pdfminer
