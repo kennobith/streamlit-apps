@@ -182,17 +182,19 @@ with st.expander('Paso 2️⃣: Subí todos los archivos, tanto los csvs como el
 
         buffer = io.BytesIO()
         with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-            df.to_excel(writer, sheet_name='excel')
-
-            with st.expander('Ver resultados'):
-                st.dataframe(df)
-            st.download_button(
-                label="Descargar resultados",
-                data=buffer,
-                file_name="incongruencias_hrs_extra.xlsx",
-                mime="application/vnd.ms-excel",
-                icon=":material/download:",
-            )
+            df.to_excel(writer, sheet_name='incongruencias_hrs_extra')
+        buffer.seek(0)
+        with st.expander('Ver resultados'):
+            st.dataframe(df)
+            
+        st.download_button(
+            label="Descargar resultados",
+            data=buffer,
+            file_name="incongruencias_hrs_extra.xlsx",
+            mime="application/vnd.ms-excel",
+            icon=":material/download:",
+        )
+    
     
 hvar = """
     <script>
