@@ -67,15 +67,16 @@ def procesar_csvs_oficinas(archivos):
 
     for archivo in archivos:
         if archivo.name.endswith(".csv"): 
-            df_reportado = pd.read_csv(archivo)
+            df_reportado = pd.read_csv(archivo, encoding="latin1")
             ofi = archivo.name.strip(".csv")
+            columnas_nombres = df_reportado.columns.tolist()
             oficinas.append({'nro_ofi': ofi,
-                            'tam_ofi': len(df_reportado),
-                            'legajos': df_reportado['LEGAJO'].tolist(),
-                            'nombres': df_reportado['NOMBRE Y APELLIDO '].tolist(),
-                            'hs_tip1': df_reportado['HORAS NORMALES'].tolist(),
-                            'hs_tip2': df_reportado['HORAS 50'].tolist(),
-                            'hs_tip3': df_reportado['HORAS 100'].tolist()})
+                             'tam_ofi': len(df_reportado),
+                             'legajos': df_reportado[columnas_nombres[0]].tolist(),
+                             'nombres': df_reportado[columnas_nombres[5]].tolist(),
+                             'hs_tip1': df_reportado[columnas_nombres[2]].tolist(),
+                             'hs_tip2': df_reportado[columnas_nombres[3]].tolist(),
+                             'hs_tip3': df_reportado[columnas_nombres[4]].tolist()})
 
     oficinas_todas = [
             oficinas[i]['nro_ofi']
@@ -163,14 +164,18 @@ with st.expander('Paso 1️⃣: Descargá el archivo de novedades'):
                 '''
                 )
 
+archivos = None
+novedades = None
+
 with st.expander('Paso 2️⃣: Subí todos los archivos, tanto los csvs como el de novedades descargado del sistema'):
 
     archivos = st.file_uploader('Subí aca abajo los archivos arrastrando o seleccionando en \'Browse files\'',accept_multiple_files=True)
-    novedades = None
-    if archivos:
+
+with st.expander('Paso 3️⃣: Procesar los datos y ver los resultados'):
+    if st.button("Procesar"):
 
         for archivo in archivos:
-            if archivo.name.endswith('.xls'): 
+            if archivo.name.endswith('xls'): 
                 novedades = archivo
                 break
 
@@ -182,19 +187,19 @@ with st.expander('Paso 2️⃣: Subí todos los archivos, tanto los csvs como el
 
         buffer = io.BytesIO()
         with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-            df.to_excel(writer, sheet_name='incongruencias_hrs_extra')
+            df.to_excel(writer, sheet_name='excel')
+
         buffer.seek(0)
         with st.expander('Ver resultados'):
             st.dataframe(df)
-            
+        
         st.download_button(
-            label="Descargar resultados",
-            data=buffer,
-            file_name="incongruencias_hrs_extra.xlsx",
-            mime="application/vnd.ms-excel",
-            icon=":material/download:",
+                label="Descargar resultados",
+                data=buffer,
+                file_name="incongruencias_hrs_extra.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                icon=":material/download:",
         )
-    
     
 hvar = """
     <script>
