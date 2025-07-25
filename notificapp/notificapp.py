@@ -1,3 +1,4 @@
+
 import streamlit as st
 from PyPDF2 import PdfReader
 from docx import Document
@@ -18,6 +19,23 @@ def obtener_expdte(filename):
 def obtener_reso(filename):
     reso = filename.split(' - ')[0]
     return reso
+
+def extraer_reso_y_expediente(texto):
+    texto = texto.strip()
+
+    # Buscar dónde empieza el nroDeExpediente
+    match = re.search(r'\bEX-\d{4}-', texto)
+    if not match:
+        return None, None
+
+    inicio_expte = match.start()
+
+    # Cortamos sin limpiar a ciegas
+    nro_reso = texto[:inicio_expte].rstrip(" -")  # solo eliminamos guiones o espacios al final del reso
+    nro_expte = texto[inicio_expte:].lstrip(" -") # solo eliminamos guiones o espacios al principio del expte
+    nro_expte = nro_expte.split('.pdf')[0]
+
+    return nro_reso, nro_expte
 
 def obtener_nombres_y_legajos(file):
     trabajadores = {} #key = legajo, clave = nombre completo
@@ -43,8 +61,9 @@ def obtener_datos(directorio):
 
     for file in st_archivos:
         st.write(f"Vamos con {file.name}")
-        reso = obtener_reso(file.name)
-        expdte = obtener_expdte(file.name)
+        #reso = obtener_reso(file.name)
+        #expdte = obtener_expdte(file.name)
+        reso,expdte = extraer_reso_y_expediente(file.name)
         trabajadores = obtener_nombres_y_legajos(file)
         datos_expdtes[file.name] = {
                                         "expdte": expdte,
