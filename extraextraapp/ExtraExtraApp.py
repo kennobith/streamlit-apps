@@ -67,7 +67,14 @@ def procesar_csvs_oficinas(archivos):
 
     for archivo in archivos:
         if archivo.name.endswith(".csv"): 
-            df_reportado = pd.read_csv(archivo, encoding="latin1")
+
+            df_reportado = pd.read_csv(archivo, encoding="latin1",skip_blank_lines=True)
+
+            nombre_ultima_columna  = df_reportado.columns[-1]
+            if df_reportado[nombre_ultima_columna].isnull().all(): # si en la ultima columna todos los elementos son nulos
+                df_reportado = df_reportado.drop(columns=[nombre_ultima_columna])
+            
+            df_reportado = df_reportado.fillna(0)
             ofi = archivo.name.strip(".csv")
             columnas_nombres = df_reportado.columns.tolist()
             oficinas.append({'nro_ofi': ofi,
@@ -92,7 +99,7 @@ def procesar_csvs_oficinas(archivos):
     df_r = pd.DataFrame(
         {   
             'legajo': legajos,
-            'nombre_completo': [nombre.upper() for nombre in nombres],
+            'nombre_completo': [nombre for nombre in nombres],
             'oficinas': oficinas_todas,
             'valor_hora_extra_1': hs_tip1,
             'valor_hora_extra_2': hs_tip2,
@@ -118,37 +125,59 @@ def comparar_y_armar_df(resultados_sistema,resultados_reporte):
         if legajo in resultados_sistema.keys():
             continue
         else:
-            no_cargados.append(legajo)
+            no_coinciden[legajo] = {'sistema': ["-","-","-","-","-"], 'reporte': resultados_reporte[legajo]}
+            # no_cargados.append(legajo) 
+
+    
 
     # hacer comparacion
     for legajo in resultados_sistema.keys():
         # si el legajo no está en reporte
         if legajo not in resultados_reporte.keys():
-            no_reportados.append(legajo)
+            no_coinciden[legajo] = {'sistema': resultados_sistema[legajo], 'reporte': ["-","-","-","-","-"]} ##
+            # no_reportados.append(legajo)
         # si el legajo está en reporte
         else:
-            # si coinciden
-            if resultados_sistema[legajo][2:5] == resultados_reporte[legajo][2:5]:
-                coinciden[legajo] = {'sistema':resultados_sistema[legajo],'reporte': resultados_reporte[legajo]}
             # si no coinciden
-            else:
+            if resultados_sistema[legajo][2:5] != resultados_reporte[legajo][2:5]:
                 no_coinciden[legajo] = {'sistema':resultados_sistema[legajo],'reporte': resultados_reporte[legajo]}
 
     df = pd.DataFrame(no_coinciden.values(),index=no_coinciden.keys())
 
+    if not df.empty:
+        def expand_column(col, prefix):
+            return pd.DataFrame(col.tolist(), 
+                                index=col.index, 
+                                columns=[f"Nombre en {prefix}", f"Oficina en {prefix}", f"H.E. normales en {prefix}", f"H.E. al 50 en {prefix}", f"H.E. al 100 en {prefix}"])
 
-    def expand_column(col, prefix):
-        return pd.DataFrame(col.tolist(), 
-                            index=col.index, 
-                            columns=[f"Nombre en {prefix}", f"Oficina en {prefix}", f"H.E. normales en {prefix}", f"H.E. al 50 en {prefix}", f"H.E. al 100 en {prefix}"])
+        df_sistema_expandido = expand_column(df["sistema"], "sistema")
+        df_reporte_expandido = expand_column(df["reporte"], "reporte")
 
-    df_sistema_expandido = expand_column(df["sistema"], "sistema")
-    df_reporte_expandido = expand_column(df["reporte"], "reporte")
-
-    df_final = pd.concat([df_sistema_expandido, df_reporte_expandido], axis=1)
-    return df_final
+        df = pd.concat([df_sistema_expandido, df_reporte_expandido], axis=1)
+    
+    return df#,no_reportados,no_cargados
 
 #################################
+def imprimir_lista(lista):
+    s = ''
+    for i in lista:
+        s += "- " + f"{i}" + "\n"
+    st.markdown(s)
+
+def informar_no_cargados_ni_reportados(no_cargados,no_reportados):
+    if len(no_cargados) > 0:
+        st.write("Estos legajos fueron reportados pero no cargados en el sistema")
+        with st.expander("Ver mas"):
+            imprimir_lista(no_cargados)
+    else: 
+        st.write("Todos los legajos reportados a asistencias están cargados en el sistema")
+
+    if len(no_reportados) > 0:
+        st.write("Estos legajos fueron cargados al sistema pero no fueron reportados a asistencias (Si no subiste todas las oficinas a la app, recordá que hay muchos de estos legajos que sobran para lo que querés comparar)")
+        with st.expander("Ver mas"):
+            imprimir_lista(no_reportados)
+    else:
+        st.write("Todos los legajos que están en el sistema han sido reportados a asistencias")
 
 st.title('Extra! Extra! 🗞️')
 
@@ -183,23 +212,29 @@ with st.expander('Paso 3️⃣: Procesar los datos y ver los resultados'):
         
         resultados_reporte = procesar_csvs_oficinas(archivos)
         
+        #df,no_reportados,no_cargados = comparar_y_armar_df(resultados_sistema,resultados_reporte)
         df = comparar_y_armar_df(resultados_sistema,resultados_reporte)
 
-        buffer = io.BytesIO()
-        with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-            df.to_excel(writer, sheet_name='excel')
+        if df.empty:
+            st.write("No se hallaron incongruencias entre lo reportado y el sistema")
+            #informar_no_cargados_ni_reportados(no_cargados,no_reportados)
+        else:
+            buffer = io.BytesIO()
+            with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+                df.to_excel(writer, sheet_name='excel')
 
-        buffer.seek(0)
-        with st.expander('Ver resultados'):
-            st.dataframe(df)
-        
-        st.download_button(
-                label="Descargar resultados",
-                data=buffer,
-                file_name="incongruencias_hrs_extra.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                icon=":material/download:",
-        )
+            buffer.seek(0)
+            with st.expander('Ver resultados'):
+                st.dataframe(df)
+            #    informar_no_cargados_ni_reportados(no_cargados,no_reportados)
+            
+            st.download_button(
+                    label="Descargar resultados",
+                    data=buffer,
+                    file_name="incongruencias_hrs_extra.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    icon=":material/download:",
+            )
     
 hvar = """
     <script>
