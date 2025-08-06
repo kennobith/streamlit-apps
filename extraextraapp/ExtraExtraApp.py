@@ -99,7 +99,7 @@ def procesar_csvs_oficinas(archivos):
     df_r = pd.DataFrame(
         {   
             'legajo': legajos,
-            'nombre_completo': [nombre for nombre in nombres],
+            'nombre_completo': [nombre.upper() for nombre in nombres],
             'oficinas': oficinas_todas,
             'valor_hora_extra_1': hs_tip1,
             'valor_hora_extra_2': hs_tip2,
@@ -117,7 +117,7 @@ def comparar_y_armar_df(resultados_sistema,resultados_reporte):
 
     no_reportados = [] #legajos de quienes están cargados en sistema pero no fueron reportados
     no_coinciden = {} #legajos de quienes no coinciden lo reportado y lo cargado en sistema
-    no_cargados = [] #legajos de quienes fueron reportados pero no cargados en sistema
+    no_estan_en_sistema = [] #legajos de quienes fueron reportados pero no cargados en sistema
     coinciden = {}
 
     # está en reporte pero no en sistema:
@@ -125,59 +125,43 @@ def comparar_y_armar_df(resultados_sistema,resultados_reporte):
         if legajo in resultados_sistema.keys():
             continue
         else:
-            no_coinciden[legajo] = {'sistema': ["-","-","-","-","-"], 'reporte': resultados_reporte[legajo]}
-            # no_cargados.append(legajo) 
-
-    
+            no_estan_en_sistema.append(f'{legajo} - {resultados_reporte[legajo][0]}')
 
     # hacer comparacion
     for legajo in resultados_sistema.keys():
         # si el legajo no está en reporte
         if legajo not in resultados_reporte.keys():
-            no_coinciden[legajo] = {'sistema': resultados_sistema[legajo], 'reporte': ["-","-","-","-","-"]} ##
-            # no_reportados.append(legajo)
+            no_reportados.append(legajo)
         # si el legajo está en reporte
         else:
+            # si coinciden
+            if resultados_sistema[legajo][2:5] == resultados_reporte[legajo][2:5]:
+                continue #coinciden[legajo] = {'sistema':resultados_sistema[legajo],'reporte': resultados_reporte[legajo]}
             # si no coinciden
-            if resultados_sistema[legajo][2:5] != resultados_reporte[legajo][2:5]:
+            else:
                 no_coinciden[legajo] = {'sistema':resultados_sistema[legajo],'reporte': resultados_reporte[legajo]}
 
     df = pd.DataFrame(no_coinciden.values(),index=no_coinciden.keys())
 
-    if not df.empty:
-        def expand_column(col, prefix):
-            return pd.DataFrame(col.tolist(), 
-                                index=col.index, 
-                                columns=[f"Nombre en {prefix}", f"Oficina en {prefix}", f"H.E. normales en {prefix}", f"H.E. al 50 en {prefix}", f"H.E. al 100 en {prefix}"])
 
-        df_sistema_expandido = expand_column(df["sistema"], "sistema")
-        df_reporte_expandido = expand_column(df["reporte"], "reporte")
+    def expand_column(col, prefix):
+        return pd.DataFrame(col.tolist(), 
+                            index=col.index, 
+                            columns=[f"Nombre en {prefix}", f"Oficina en {prefix}", f"H.E. normales en {prefix}", f"H.E. al 50 en {prefix}", f"H.E. al 100 en {prefix}"])
 
-        df = pd.concat([df_sistema_expandido, df_reporte_expandido], axis=1)
-    
-    return df#,no_reportados,no_cargados
+    df_sistema_expandido = expand_column(df["sistema"], "sistema")
+    df_reporte_expandido = expand_column(df["reporte"], "reporte")
+
+    df_final = pd.concat([df_sistema_expandido, df_reporte_expandido], axis=1)
+    return df_final,no_estan_en_sistema
 
 #################################
+
 def imprimir_lista(lista):
     s = ''
     for i in lista:
         s += "- " + f"{i}" + "\n"
     st.markdown(s)
-
-def informar_no_cargados_ni_reportados(no_cargados,no_reportados):
-    if len(no_cargados) > 0:
-        st.write("Estos legajos fueron reportados pero no cargados en el sistema")
-        with st.expander("Ver mas"):
-            imprimir_lista(no_cargados)
-    else: 
-        st.write("Todos los legajos reportados a asistencias están cargados en el sistema")
-
-    if len(no_reportados) > 0:
-        st.write("Estos legajos fueron cargados al sistema pero no fueron reportados a asistencias (Si no subiste todas las oficinas a la app, recordá que hay muchos de estos legajos que sobran para lo que querés comparar)")
-        with st.expander("Ver mas"):
-            imprimir_lista(no_reportados)
-    else:
-        st.write("Todos los legajos que están en el sistema han sido reportados a asistencias")
 
 st.title('Extra! Extra! 🗞️')
 
@@ -193,6 +177,7 @@ with st.expander('Paso 1️⃣: Descargá el archivo de novedades'):
                 '''
                 )
 
+
 archivos = None
 novedades = None
 
@@ -201,40 +186,46 @@ with st.expander('Paso 2️⃣: Subí todos los archivos, tanto los csvs como el
     archivos = st.file_uploader('Subí aca abajo los archivos arrastrando o seleccionando en \'Browse files\'',accept_multiple_files=True)
 
 with st.expander('Paso 3️⃣: Procesar los datos y ver los resultados'):
+
     if st.button("Procesar"):
 
-        for archivo in archivos:
-            if archivo.name.endswith('xls'): 
-                novedades = archivo
-                break
+        if archivos:
 
-        resultados_sistema = procesar_novedades_sistema(novedades)
-        
-        resultados_reporte = procesar_csvs_oficinas(archivos)
-        
-        #df,no_reportados,no_cargados = comparar_y_armar_df(resultados_sistema,resultados_reporte)
-        df = comparar_y_armar_df(resultados_sistema,resultados_reporte)
+            for archivo in archivos:
+                if archivo.name.endswith('.xls'): 
+                    novedades = archivo
+                    break
 
-        if df.empty:
-            st.write("No se hallaron incongruencias entre lo reportado y el sistema")
-            #informar_no_cargados_ni_reportados(no_cargados,no_reportados)
-        else:
-            buffer = io.BytesIO()
-            with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-                df.to_excel(writer, sheet_name='excel')
+            if novedades is None:
+                st.error('No subiste el archivo de novedades, hacelo en el paso 2', icon = '🚨')
+            else:
+                resultados_sistema = procesar_novedades_sistema(novedades)
+                
+                resultados_reporte = procesar_csvs_oficinas(archivos)
+                
+                df,no_estan_en_sistema = comparar_y_armar_df(resultados_sistema,resultados_reporte)
 
-            buffer.seek(0)
-            with st.expander('Ver resultados'):
-                st.dataframe(df)
-            #    informar_no_cargados_ni_reportados(no_cargados,no_reportados)
-            
-            st.download_button(
-                    label="Descargar resultados",
-                    data=buffer,
-                    file_name="incongruencias_hrs_extra.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    icon=":material/download:",
-            )
+                buffer = io.BytesIO()
+                with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+                    df.to_excel(writer, sheet_name='incongruencias_hrs_extra')
+                buffer.seek(0)
+                with st.expander('Ver resultados'):
+                    st.dataframe(df)
+
+                    if len(no_estan_en_sistema) > 0:
+                        st.write("Estos legajos fueron reportados pero no cargados en el sistema")
+                        with st.expander("Ver mas"):
+                            imprimir_lista(no_estan_en_sistema)
+                    else: 
+                        st.write("Todos los legajos reportados a asistencias están cargados en el sistema")
+                        
+                    st.download_button(
+                        label="Descargar resultados",
+                        data=buffer,
+                        file_name="incongruencias_hrs_extra.xlsx",
+                        mime="application/vnd.ms-excel",
+                        icon=":material/download:",
+                    )
     
 hvar = """
     <script>
