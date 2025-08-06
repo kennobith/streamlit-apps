@@ -90,7 +90,7 @@ if st_archivos:
 
         st.info('Recordá revisar el documento')
         st.download_button(
-            label="Descargar notificaciones",
+            label="Descargar anexos",
             data=buffer,
             file_name= titulo.strip() + ".docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
