@@ -73,11 +73,12 @@ def procesar_csvs_oficinas(archivos):
             df_reportado = pd.read_csv(archivo, encoding="latin1",skip_blank_lines=True)
 
             nombre_ultima_columna  = df_reportado.columns[-1]
+            nombre_primera_columna = df_reportado.columns[0]
             if df_reportado[nombre_ultima_columna].isnull().all(): # si en la ultima columna todos los elementos son nulos
                 df_reportado = df_reportado.drop(columns=[nombre_ultima_columna])
             #quitar filas nulas de tipo ,0,,,,
             df_reportado = df_reportado[~(df_reportado.drop(df_reportado.columns[1], axis=1).isna().all(axis=1))]
-            
+            df_reportado[nombre_primera_columna] = df_reportado[nombre_primera_columna].astype(str).str.replace(' ', '', regex=False)
             df_reportado = df_reportado.fillna(0)
             ofi = archivo.name.strip(".csv")
             columnas_nombres = df_reportado.columns.tolist()
@@ -273,5 +274,6 @@ hvar = """
 
 
 components.html(hvar, height=0, width=0)
+
 
 
