@@ -149,7 +149,7 @@ def comparar_y_armar_df(resultados_sistema,resultados_reporte,oficinas):
         else:
             #si esta en las oficinas dadas
             if no_fue_reportado_y_esta_en_oficinas(resultados_sistema,legajo,oficinas):
-                no_reportados.append(f'Legajo: {legajo} - Oficina: {resultados_sistema['legajo'][1]}')
+                no_reportados.append(f'Legajo: {legajo} - Oficina: {resultados_sistema[legajo][1]}')
 
     df = pd.DataFrame(no_coinciden.values(),index=no_coinciden.keys())
 
@@ -271,3 +271,4 @@ hvar = """
 
 
 components.html(hvar, height=0, width=0)
+
