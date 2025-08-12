@@ -115,7 +115,6 @@ def procesar_csvs_oficinas(archivos):
 
 def comparar_y_armar_df(resultados_sistema,resultados_reporte):
 
-    no_reportados = [] #legajos de quienes están cargados en sistema pero no fueron reportados
     no_coinciden = {} #legajos de quienes no coinciden lo reportado y lo cargado en sistema
     no_estan_en_sistema = [] #legajos de quienes fueron reportados pero no cargados en sistema
     coinciden = {}
@@ -131,12 +130,12 @@ def comparar_y_armar_df(resultados_sistema,resultados_reporte):
     for legajo in resultados_sistema.keys():
         # si el legajo no está en reporte
         if legajo not in resultados_reporte.keys():
-            no_reportados.append(legajo)
-        # si el legajo está en reporte
+            continue
+            # si el legajo está en reporte
         else:
             # si coinciden
             if resultados_sistema[legajo][2:5] == resultados_reporte[legajo][2:5]:
-                continue #coinciden[legajo] = {'sistema':resultados_sistema[legajo],'reporte': resultados_reporte[legajo]}
+                continue
             # si no coinciden
             else:
                 no_coinciden[legajo] = {'sistema':resultados_sistema[legajo],'reporte': resultados_reporte[legajo]}
@@ -236,5 +235,6 @@ hvar = """
         elements[0].style.fontWeight = 'bold';
     </script>
 """
+
 
 components.html(hvar, height=0, width=0)
