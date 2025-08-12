@@ -75,6 +75,8 @@ def procesar_csvs_oficinas(archivos):
             nombre_ultima_columna  = df_reportado.columns[-1]
             if df_reportado[nombre_ultima_columna].isnull().all(): # si en la ultima columna todos los elementos son nulos
                 df_reportado = df_reportado.drop(columns=[nombre_ultima_columna])
+            #quitar filas nulas de tipo ,0,,,,
+            df_reportado = df_reportado[~(df_reportado.drop(df_reportado.columns[1], axis=1).isna().all(axis=1))]
             
             df_reportado = df_reportado.fillna(0)
             ofi = archivo.name.strip(".csv")
@@ -271,4 +273,5 @@ hvar = """
 
 
 components.html(hvar, height=0, width=0)
+
 
