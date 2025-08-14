@@ -73,6 +73,8 @@ def procesar_csvs_oficinas(archivos):
             df_reportado = pd.read_csv(archivo, encoding="latin1",skip_blank_lines=True)
 
             nombre_primera_columna = df_reportado.columns[0]
+            nombre_ultima_columna = df_reportado.columns[-1]
+            
             if df_reportado[nombre_ultima_columna].isnull().all(): # si en la ultima columna todos los elementos son nulos
                 df_reportado = df_reportado.drop(columns=[nombre_ultima_columna])
             df_reportado = df_reportado[df_reportado.iloc[:, 0].notna()]
@@ -272,6 +274,7 @@ hvar = """
 
 
 components.html(hvar, height=0, width=0)
+
 
 
 
