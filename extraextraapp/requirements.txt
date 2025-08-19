@@ -3,4 +3,4 @@ pandas
 xlrd
 xlsxwriter
 difflib
-re
+re==2.2.1
