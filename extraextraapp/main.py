@@ -3,6 +3,7 @@ import re
 import streamlit as st
 import io
 import difflib
+import utils
 
 # FUNCIONES AUXILIARES SCRIPT
 def type_cast_to_integer(df,nombres_col):
@@ -377,4 +378,5 @@ with st.expander('Paso 3️⃣: Procesar los datos y ver los resultados'):
                 if len(nombres_no_coinciden) > 0:
                     st.write('Los siguientes nombres no coinciden:')
                     imprimir_no_coinciden(nombres_no_coinciden)
+
 
