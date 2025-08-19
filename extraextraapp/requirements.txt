@@ -2,5 +2,4 @@ streamlit==1.46.1
 pandas
 xlrd
 xlsxwriter
-difflib
 re==2.2.1
