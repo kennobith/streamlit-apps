@@ -1,8 +1,8 @@
 import pandas as pd
-import os
+import re
 import streamlit as st
 import io
-import streamlit.components.v1 as components
+import difflib
 
 # FUNCIONES AUXILIARES SCRIPT
 def type_cast_to_integer(df,nombres_col):
@@ -27,6 +27,12 @@ def flatten(oficinas,clave):
 def ordenar_por_legajo_y_dict(df):
     df = df.sort_values(by = 'legajo')
     df= df.set_index('legajo').T.to_dict('list')
+    return df
+
+def dict_a_dataframe(diccionario, columnas):
+    df = pd.DataFrame.from_dict(diccionario, orient='index', columns=columnas)
+    df.reset_index(inplace=True)       # vuelve el índice (legajo) a columna
+    df.rename(columns={'index': 'legajo'}, inplace=True)
     return df
 
 def limpiar_csv(archivo):
@@ -61,6 +67,27 @@ def expand_column(col, prefix):
 
 def esta_en_oficinas(resultados,legajo,oficinas):
     return resultados[legajo][1].strip() in oficinas
+
+def limpiar_nombre(nombre):
+    nombre = nombre.upper() # mayúsculas
+    nombre = re.sub(r"['’]", "", nombre) # quitar comas y apóstrofes
+    nombre = re.sub(r",\s", " ", nombre)
+    nombre = re.sub(r",", " ", nombre)
+    reemplazos = {"Á": "A", 
+                  "É": "E",
+                  "Í": "I", 
+                  "Ó": "O",
+                  "Ú": "U",
+                  "Ü": "U"}
+    patron = re.compile("|".join(reemplazos.keys()))
+    nombre = patron.sub(lambda m: reemplazos[m.group()], nombre) # reemplazar tildes
+    nombre = nombre.strip() # sacar espacios adicionales
+    nombre = re.sub(' +',' ',nombre) # idem 
+    return nombre.split(' ')
+
+def son_iguales(nombre1, nombre2, umbral=0.8):
+    ratio = difflib.SequenceMatcher(None, nombre1, nombre2).ratio()
+    return ratio >= umbral
 
 # FUNCIONES PRINCIPALES
 def procesar_novedades_sistema(novedades_sistema):
@@ -206,6 +233,29 @@ def comparar_y_armar_df(resultados_sistema,resultados_reporte,oficinas):
         
     return df_final, no_estan_en_sistema, no_reportados
 
+def comparar_nombres(resultados_sistema,resultados_reporte):
+    columnas = ['nombre','oficina','hr_extr1','hr_extr2','hr_extr3']
+    df_s = dict_a_dataframe(resultados_sistema,columnas)
+    df_r = dict_a_dataframe(resultados_reporte,columnas)
+    df_s = df_s[['legajo','nombre']]
+    df_r = df_r[['legajo','nombre','oficina']]
+    df = pd.merge(df_s,df_r,on='legajo',how='outer')
+    df = df.dropna() # quitar donde no este reportado o no esté cargado
+    no_coinciden = {}
+    personas = ordenar_por_legajo_y_dict(df)
+    for legajo,nombres in personas.items():
+        nombre_s = limpiar_nombre(nombres[0])
+        nombre_r = limpiar_nombre(nombres[1])
+        archivo = nombres[2]
+        coincidencias = 0
+        for palabra1 in nombre_s:
+            for palabra2 in nombre_r:
+                if son_iguales(palabra1,palabra2):
+                    coincidencias +=1
+        if coincidencias < 2:
+            no_coinciden[legajo] = [nombre_s,nombre_r,archivo]
+    return no_coinciden
+
 # FUNCIONES AUXILIARES PAGINA
 def procesar_oficinas(oficinas):
     res = []
@@ -238,6 +288,16 @@ def imprimir_lista(lista):
         s += "- " + f"{i}" + "\n"
     st.markdown(s)
 
+def imprimir_no_coinciden(dict):
+    s = ''
+    for key, value in dict.items():
+        nombre1 = " ".join(value[0])
+        nombre2 = " ".join(value[1])
+        archivo = value[2]
+        st.write(f"+ Legajo {key}, en sistema {nombre1}, en reporte {nombre2} del archivo {archivo}")
+    st.markdown(s)
+
+ 
 # PAGINA
 st.title('Extra! Extra! 🗞️')
 
@@ -311,4 +371,10 @@ with st.expander('Paso 3️⃣: Procesar los datos y ver los resultados'):
                     )
                 else:
                     st.write("3) No se encontraron inconsistencias entre lo reportado y el sistema.")
+
+                nombres_no_coinciden = comparar_nombres(resultados_sistema,resultados_reporte)
+
+                if len(nombres_no_coinciden) > 0:
+                    st.write('Los siguientes nombres no coinciden:')
+                    imprimir_no_coinciden(nombres_no_coinciden)
 
