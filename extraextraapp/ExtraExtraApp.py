@@ -360,7 +360,7 @@ with st.expander('Paso 3️⃣: Procesar los datos y ver los resultados'):
                     st.write("3) Se encontraron las siguientes inconsistencias:")
                     st.write(df)
                     with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-                        df.to_excel(writer, sheet_name='inconsistencias_hrs_extra', index=False)
+                        df.to_excel(writer, sheet_name='inconsistencias_hrs_extra', index=True)
                     buffer.seek(0)
                     st.download_button(
                         label="Descargar resultados",
@@ -375,8 +375,9 @@ with st.expander('Paso 3️⃣: Procesar los datos y ver los resultados'):
                 nombres_no_coinciden = comparar_nombres(resultados_sistema,resultados_reporte)
 
                 if len(nombres_no_coinciden) > 0:
-                    st.write('Los siguientes nombres no coinciden:')
+                    st.write('Los siguientes nombres pueden no coincidir:')
                     imprimir_no_coinciden(nombres_no_coinciden)
+
 
 
 
