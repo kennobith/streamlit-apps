@@ -306,7 +306,7 @@ with st.expander('Paso 1️⃣: Descargá el archivo de novedades'):
     st.markdown('''
                 - Entrar a M@JOR e ir a Informes > Informes de empleados > Empleados por novedad
                 - Elegir partición MU
-                - Seleccionar Novedades vigentes en el año actual y el mes anterior
+                - Seleccionar Novedades vigentes en el año y mes actual
                 - Elegir variables desde @HRSEXTR1 a @HRSEXTR3
                 - Establecer restricciones > Ejecutar
                 - ⚠️**Importante**⚠️: exportarlo en el formato "Excel 5.0 (XLS) Tabular" y confirmar "Column headings"
@@ -377,6 +377,7 @@ with st.expander('Paso 3️⃣: Procesar los datos y ver los resultados'):
                 if len(nombres_no_coinciden) > 0:
                     st.write('Los siguientes nombres pueden no coincidir:')
                     imprimir_no_coinciden(nombres_no_coinciden)
+
 
 
 
