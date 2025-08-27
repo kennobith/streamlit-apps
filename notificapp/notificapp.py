@@ -43,10 +43,10 @@ def obtener_nombres_y_legajos(file):
     texto = texto.replace('\n', ' ') 
     texto = re.sub(r'\s+', ' ', texto)
     patron = r"(?:Dr\.|Dra\.|Lic\.|Ing\.|Sr\.|Sra\.|Prof\.|Mg\.)?\s*" \
-            r"((?:[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+|[A-ZÁÉÍÓÚÑ]+)" \
-            r"(?:,\s*(?:[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+|[A-ZÁÉÍÓÚÑ]+)" \
-            r"|(?:\s+(?:[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+|[A-ZÁÉÍÓÚÑ]+))*)?)\s*" \
-            r"\(Legajo\s+(?:(?:N°|Nº|No|N\.°|N\.º|Num\.?)\s+)?(\d{1,3}(?:\.\d{3})*|\d+)\)"
+r"((?:[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+|[A-ZÁÉÍÓÚÑ]+)" \
+r"(?:,\s*(?:[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+|[A-ZÁÉÍÓÚÑ]+)" \
+r"|(?:\s+(?:[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+|[A-ZÁÉÍÓÚÑ]+))*)?)\s*,?\s*" \
+r"\(Legajo\s+(?:(?:N°|Nº|No|N\.°|N\.º|Num\.?)\s+)?(\d{1,3}(?:\.\d{3})*|\d+)\)"
 
     coincidencias = re.findall(patron, texto)
 
@@ -149,4 +149,5 @@ if st_archivos:
             icon=":material/download:",
 
         )
+
 
