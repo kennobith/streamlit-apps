@@ -53,7 +53,7 @@ def obtener_nombres_y_legajos(file):
              r"{0,5}" \
          r")\s*,?\s*" \
          r"\((?:Legajo|Leg\.?)\s+" \
-             r"(?:(?:N°|Nº|No|N\.°|N\.º|Nᵃ|Num\.?)\s+)?" \
+             r"(?:(?:N°|Nº|No|N\.°|N\.º|Nᵃ|Num\.?)\s*)?" \
              r"(?P<legajo>\d{1,3}(?:\.\d{3})*|\d+)" \
          r"\)"
 
@@ -158,6 +158,7 @@ if st_archivos:
             icon=":material/download:",
 
         )
+
 
 
 
