@@ -7,7 +7,6 @@ from docx.shared import Mm
 import streamlit as st
 from io import BytesIO
 
-
 def armar_anexo(documento,planilla):
     # Encabezado del anexo centrado y en negrita
     parrafo_exp = documento.add_paragraph()
@@ -25,8 +24,8 @@ def armar_anexo(documento,planilla):
     encabezado = tabla.rows[0].cells
     encabezado[0].text = "LEGAJO"
     encabezado[1].text = "APELLIDO Y NOMBRE"
-    encabezado[2].text = "FUNCIÓN"
-    encabezado[3].text = "Cat."
+    encabezado[2].text = "Cat."
+    encabezado[3].text = "FUNCION"
     encabezado[4].text = "BONIF."
     encabezado[5].text = "INGRESO"
     encabezado[6].text = "EGRESO"
@@ -36,15 +35,18 @@ def armar_anexo(documento,planilla):
     ws = wb.worksheets[0]
 
     for row in ws.iter_rows(min_row = 2, max_row = ws.max_row, min_col = 3, max_col = 9):
-        fila = tabla.add_row().cells
-        i = 0
-        for cell in row:
-            if cell.value is not None:
-                fila[i].text = str(cell.value)
-            else:
-                fila[i].text = ""
-            i += 1
-        fila[7].text = "" # espacio para firmar
+        if not all(cell.value is None for cell in row):
+            fila = tabla.add_row().cells
+            i = 0
+            for cell in row:
+                if i == 5 or i == 6:
+                    fila[i].text = str(cell.value.strftime("%d/%m/%Y"))
+                elif cell.value is not None:
+                    fila[i].text = str(cell.value)
+                else:
+                    fila[i].text = ""
+                i += 1
+            fila[7].text = "" # espacio para firmar
 
     documento.add_page_break()
 
@@ -90,7 +92,7 @@ if st_archivos:
 
         st.info('Recordá revisar el documento')
         st.download_button(
-            label="Descargar anexos",
+            label="Descargar notificaciones",
             data=buffer,
             file_name= titulo.strip() + ".docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
