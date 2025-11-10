@@ -206,7 +206,7 @@ def cambiar_fechas(df):
     df["dia_inicio"] = pd.to_datetime(df["dia_inicio"],format="%d/%m/%Y")
     df["dia_fin"] = pd.to_datetime(df["dia_fin"],format="%d/%m/%Y")
 
-    hoy = datetime(2025,11,1) # CAMBIAR!!!!!
+    hoy = datetime.today()
 
     # Determinar el mes anterior
     primer_dia_mes_anterior = (hoy.replace(day=1) - timedelta(days=1)).replace(day=1)
@@ -315,15 +315,13 @@ def normalizar_planilla_hhee(planilla_hhee):
     df = planilla_hhee
     df = df[df.columns[:34]]
 
-    st.write(f"Esta es la planilla de hhee antes de normalizar")
-    st.write(df)
     idx = buscar_tabla(df,"Legajo","Planilla de horas extras")
     df.columns = df.iloc[idx]
     df = df.drop(idx)
     df = df.reset_index(drop=True)
     df = df.dropna(how="all")
     # Rellenar legajos vacíos con último valor válido
-    df["Legajo"] = df["Legajo"].ffill()
+    df["Legajo"] = df["Legajo"].ffill(limit=2)
     df["Apellido y Nombre"] = df["Apellido y Nombre"].ffill()
     # Quitar filas donde "Legajo" está vacío
     df = df[df["Legajo"].notna()]
@@ -346,9 +344,6 @@ def normalizar_planilla_hhee(planilla_hhee):
 
     #Como las columnas que quedan que podrían tener na son de dias y hrs extras, se ponen en cero
     df = df.fillna(0)
-
-    st.write(f"Esta es la planilla de hhee después de normalizar")
-    st.write(df)
 
     return df
     
@@ -498,4 +493,3 @@ if planilla_csv and ausencias:
         key='download_csv_no_index'
     )
     
-
