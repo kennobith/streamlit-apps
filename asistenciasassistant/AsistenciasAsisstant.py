@@ -179,10 +179,25 @@ def transformar_hhee_a_csv(df: pd.DataFrame):
         values="horas",
         fill_value=0
     ).reset_index()
+  
     # 4) Renombrar las columnas según tu nomenclatura solicitada
-    #    Asumo: 'N' -> horas_normales, '0.5' -> horas_50, '1' -> horas_100
-    summary.columns = summary.columns.astype(str)
-    summary = summary.rename(columns={"N": "horas_normales", "0.5": "horas_50", "1": "horas_100"})
+    # Identificar los valores únicos en orden de aparición
+    unique_types = list(df['tipo_hora'].dropna().unique())
+    unique_types = unique_types[0:3]
+    # Asegurar que tengamos exactamente 3 tipos
+    if len(unique_types) < 3:
+        st.error("Advertencia: se esperaban exactamente 3 tipos de hora. Se detectaron menos")
+        st.stop()
+
+    # Mapeo universal según orden
+    mapping = {
+        unique_types[0]: 'horas_normales',
+        unique_types[1]: 'horas_50',
+        unique_types[2]: 'horas_100'
+    }
+
+    summary = summary.rename(columns=mapping)
+  
     # 5) Asegurarse de que existan las 3 columnas esperadas
     for col in ["horas_normales", "horas_50", "horas_100"]:
         if col not in summary.columns:
@@ -493,3 +508,4 @@ if planilla_csv and ausencias:
         key='download_csv_no_index'
     )
     
+
