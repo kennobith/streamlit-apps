@@ -337,7 +337,7 @@ def normalizar_planilla_hhee(planilla_hhee):
     df = df.dropna(how="all")
     # Rellenar legajos vacíos con último valor válido
     df["Legajo"] = df["Legajo"].ffill(limit=2)
-    df["Apellido y Nombre"] = df["Apellido y Nombre"].ffill()
+    df["Apellido y Nombre"] = df["Apellido y Nombre"].ffill(limit=2)
     # Quitar filas donde "Legajo" está vacío
     df = df[df["Legajo"].notna()]
 
@@ -353,7 +353,11 @@ def normalizar_planilla_hhee(planilla_hhee):
         df.columns[2]: "tipo_hora"
     }) 
     
-    df["legajo"] = df["legajo"].astype(str).str.replace(r"[.,]", "", regex=True)
+    df["legajo"] = (
+        df["legajo"]
+        .apply(lambda x: str(int(x)) if isinstance(x, (int, float)) and not pd.isna(x) else str(x))
+        .str.replace(r"[.,\s]", "", regex=True)
+    )
     df = df[df["legajo"].astype(str).str.isdigit()]
     df["legajo"] = df["legajo"].astype(str)
 
@@ -508,4 +512,5 @@ if planilla_csv and ausencias:
         key='download_csv_no_index'
     )
     
+
 
