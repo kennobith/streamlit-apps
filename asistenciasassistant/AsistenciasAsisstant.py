@@ -58,9 +58,6 @@ def indexar_hojas_excel(planilla_csv):
     if len(nombres_hojas) > 2:
         st.error("No se pudo procesar el archivo. La planilla de horas extras cargada tiene más de dos hojas.")
         st.stop()
-    elif len(nombres_hojas) < 2:
-        st.error("No se pudo procesar el archivo. La planilla de horas extras cargada tiene una sola hoja.")
-        st.stop()
 
     # Iterar por cada hoja
     for hoja in nombres_hojas:
@@ -512,5 +509,6 @@ if planilla_csv and ausencias:
         key='download_csv_no_index'
     )
     
+
 
 
