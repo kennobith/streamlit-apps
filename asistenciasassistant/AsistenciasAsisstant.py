@@ -304,6 +304,9 @@ def normalizar_planilla_hhee(planilla_hhee):
 
     # Identificar columnas de días → las primeras 31 después de las 3 iniciales
     day_cols = df.columns[3:34]
+  
+    # forzar los valores a numeric
+    df.iloc[:, 3:34] = df.iloc[:, 3:34].apply(pd.to_numeric, errors='coerce')
 
     # Renombrar las fechas por números 1–31
     df.rename(columns={day_cols[i]: i+1 for i in range(len(day_cols))}, inplace=True)
@@ -324,6 +327,9 @@ def normalizar_planilla_hhee(planilla_hhee):
 
     #Como las columnas que quedan que podrían tener na son de dias y hrs extras, se ponen en cero
     df = df.fillna(0)
+
+    #Quitar aquellos espacios donde legajo quedó en 0
+    df = df[df["legajo"] != '0']
 
     return df
     
@@ -473,6 +479,7 @@ if planilla_csv and ausencias:
         key='download_csv_no_index'
     )
     
+
 
 
 
