@@ -116,44 +116,6 @@ def buscar_tabla(df,keyword,nombre_tabla=""):
 
     return idx_header
 
-def formatear_csvs(planilla_csv, nombres_hojas):
-    '''
-    Deprecado I think
-    Retorna el csv formateado listo para cargar
-        Legajos.
-        Formato csv.
-        Completar 0's.
-        Que no haya legajos repetidos.
-        Que los legajos estén en la oficina correspondiente.
-        Planilla vs ausencias.
-        Planilla vs csv.
-    Precondicion {la columna 1 debe tener los legajos (no importa en qué fila)}
-    '''
-    resumen_hhee = pd.read_excel(planilla_csv, sheet_name = nombres_hojas["hoja_csv"], engine = "calamine")
-    # Todos las celdas que sean None las ponemos en 0
-    resumen_hhee = resumen_hhee.replace(["", " ", "None", "none", None, pd.NA], 0)
-
-    #Si hay legajos que están escritos con numeros y comas los reescribimos así: 12.345 -> 12345 y filtramos los que tengan legajos
-    primera_col = resumen_hhee.columns[0]
-    mask = resumen_hhee[primera_col].astype(str).str.replace(r"[.,]", "", regex=True).str.contains(r"(?:\D*\d){4}", regex=True)
-    resumen_hhee = resumen_hhee[mask].reset_index(drop=True)
-    
-    resumen_hhee = resumen_hhee[resumen_hhee.columns[:6]]
-    resumen_hhee.columns = ["LEGAJO","COLUMNA (0)","HORAS NORMALES","HORAS 50","HORAS 100","NOMBRE Y APELLIDO"]
-
-    # Convertimos columnas COLUMNA (0) - HORAS 100 a int
-    cols_to_int = resumen_hhee.columns[2:6]
-    resumen_hhee[cols_to_int] = resumen_hhee[cols_to_int].astype(int)
-
-    # Chequeamos que la columna 2 tenga todos ceros y no otra cosa (como nombres o numeros)
-    all_zero_cols = resumen_hhee["COLUMNA (0)"].eq(0).all()
-    if all_zero_cols:
-        st.error("""
-                No se puede procesar este csv porque está mal el formato
-                 """)
-
-    return resumen_hhee
-
 def transformar_hhee_a_csv(df: pd.DataFrame):
     '''
     Arma el csv que se carga al sistema
@@ -328,8 +290,10 @@ def normalizar_planilla_hhee(planilla_hhee):
     df = df[df.columns[:34]]
 
     idx = buscar_tabla(df,"Legajo","Planilla de horas extras")
-    df.columns = df.iloc[idx]
-    df = df.drop(idx)
+    if idx != -1: # si la tabla no tiene como encabezados los que queremos
+        df.columns = df.iloc[idx]
+        df = df.drop(idx)
+      
     df = df.reset_index(drop=True)
     df = df.dropna(how="all")
     # Rellenar legajos vacíos con último valor válido
@@ -509,6 +473,7 @@ if planilla_csv and ausencias:
         key='download_csv_no_index'
     )
     
+
 
 
 
