@@ -165,6 +165,16 @@ def transformar_hhee_a_csv(df: pd.DataFrame):
     # 6) Orden final de columnas: legajo, horas_normales, horas_50, horas_100, nombre
     summary_final = summary[["legajo", "horas_normales", "horas_50", "horas_100", "nombre"]]
     summary_final.insert(1, "columna(0)", 0)
+
+    numeric_cols = ["horas_normales", "horas_50", "horas_100"]
+    for col in numeric_cols:
+        summary_final[col] = (
+            summary_final[col]
+                .astype(str)          # por si vienen como object/float/string
+                .str.replace(",", ".", regex=False)  # reemplaza coma decimal si aparece
+        )
+        summary_final[col] = pd.to_numeric(summary_final[col], errors="coerce").fillna(0)
+      
     # Lo transformamos a CSV
     return summary_final
     #csv = summary_final.to_csv(index=False).encode('latin1')
@@ -479,6 +489,7 @@ if planilla_csv and ausencias:
         key='download_csv_no_index'
     )
     
+
 
 
 
