@@ -266,7 +266,7 @@ def transformar_ausencias_a_dict(ausencias) -> dict:
     
     cambiar_fechas(df)
     df["nro_motivo"] = df["nro_motivo"].astype(int)
-    df = df[df["nro_motivo"].isin(codigos_ausencias_no_descontables)]
+    df = df[~df["nro_motivo"].isin(codigos_ausencias_no_descontables)]
 
     st.write(f"Esta es la planilla de ausencias")
     st.write(df)
@@ -489,6 +489,7 @@ if planilla_csv and ausencias:
         key='download_csv_no_index'
     )
     
+
 
 
 
