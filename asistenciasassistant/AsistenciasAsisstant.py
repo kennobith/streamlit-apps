@@ -4,6 +4,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 import difflib
 import re
+import numpy as np
 
 #Estos son codigos de motivos de ausencia que detallan para que si
 #se declara en la planilla que una persona hizo horas extras en un 
@@ -131,6 +132,8 @@ def transformar_hhee_a_csv(df: pd.DataFrame):
 
     # 2) Colapsar las columnas de día a un único total por cada (legajo,nombre,tipo_hora)
     grouped_total = grouped.sum(axis=1).reset_index(name="horas")
+
+    grouped_total["horas"] = np.ceil(grouped_total["horas"])
     # 3) Pivotear para que cada tipo_hora quede en su propia columna
     summary = grouped_total.pivot_table(
         index=["legajo", "nombre"],
@@ -489,6 +492,7 @@ if planilla_csv and ausencias:
         key='download_csv_no_index'
     )
     
+
 
 
 
