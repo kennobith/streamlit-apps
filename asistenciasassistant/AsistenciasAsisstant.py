@@ -195,6 +195,7 @@ def cambiar_fechas(df):
     df["dia_fin"] = pd.to_datetime(df["dia_fin"],format="%d/%m/%Y")
 
     hoy = datetime.today().replace(month=11)
+    hoy = hoy.replace(hour=0, minute=0, second=0, microsecond=0)
 
     # Determinar el mes anterior
     primer_dia_mes_anterior = (hoy.replace(day=1) - timedelta(days=1)).replace(day=1)
@@ -493,6 +494,7 @@ if planilla_csv and ausencias:
         key='download_csv_no_index'
     )
     
+
 
 
 
