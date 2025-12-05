@@ -194,7 +194,7 @@ def cambiar_fechas(df):
     df["dia_inicio"] = pd.to_datetime(df["dia_inicio"],format="%d/%m/%Y")
     df["dia_fin"] = pd.to_datetime(df["dia_fin"],format="%d/%m/%Y")
 
-    hoy = datetime.today().replace(month=11)
+    hoy = datetime.today()
     hoy = hoy.replace(hour=0, minute=0, second=0, microsecond=0)
 
     # Determinar el mes anterior
@@ -466,7 +466,8 @@ def reportar_inconsistencias(ausencias_ofi,planilla_hhee):
 st.title("Asistencia's Assistant 🤖")
 planilla_csv = st.file_uploader("subí la planilla de horas extras")
 ausencias = st.file_uploader("subí la planilla de ausencias")
-if planilla_csv and ausencias:
+nombre_archivo = st.text_input("Escribí el nombre del archivo csv que querés generar")
+if planilla_csv and ausencias and nombre_archivo:
     #para planilla_csv hay que indexar las hojas:
     resumen = indexar_hojas_excel(planilla_csv)
     #trabajamos con planilla_hhee
@@ -487,13 +488,14 @@ if planilla_csv and ausencias:
 
     csv = resumen_planilla.to_csv(index=False).encode('latin1')
     st.download_button(
-        label="Download CSV without Index",
+        label="Descargar CSV",
         data=csv,
         file_name="my_data_no_index.csv",
-        mime="text/csv",
+        mime=nombre_archivo,
         key='download_csv_no_index'
     )
     
+
 
 
 
