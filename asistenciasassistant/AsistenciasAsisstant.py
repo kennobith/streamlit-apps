@@ -490,8 +490,8 @@ if planilla_csv and ausencias and nombre_archivo:
     st.download_button(
         label="Descargar CSV",
         data=csv,
-        file_name="my_data_no_index.csv",
-        mime=nombre_archivo,
+        file_name=str(nombre_archivo),
+        mime="text/csv",
         key='download_csv_no_index'
     )
     
