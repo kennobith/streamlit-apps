@@ -16,17 +16,16 @@ import io
 #Estos son codigos de motivos de ausencia que detallan para que si
 #se declara en la planilla que una persona hizo horas extras en un 
 #día bajo alguno de estos codigos no se descuenten las mismas.
-codigos_ausencias_no_descontables = (set([1,4,5,6,7,8,9,10,11,12,13,
-                                          14,15,16,17,18,21,22,25,26,
-                                          30,31,32,33,34,35,36,37,38,39,
-                                          41,42,43,44,48,49,50,57,58,
-                                          59,62,65,70,78,81,82,83,84,85,89,
-                                          90,91,100,102,103,104,110,
-                                          111,120,121,130,131,140,141,
-                                          500,501,502,504,505,506,601,
-                                          602,603,772,773,774,777,780,
-                                          781,783,784,785,788,791,796,
-                                          797,798]))
+codigos_ausencias_no_descontables = (set([1,4,5,6,7,8,9,10,11,12,13,14,
+                                          15,16,17,18,21,22,25,26,30,31,
+                                          32,33,34,35,36,37,38,39,41,42,
+                                          43,44,48,49,50,57,58,59,62,65,
+                                          70,78,81,82,83,84,85,87,89,90,
+                                          91,100,102,103,104,110,111,120,
+                                          121,130,131,140,141,500,501,502,
+                                          504,505,506,601,602,603,772,773,
+                                          774,777,780,781,783,784,785,788,
+                                          791,796,797,798]))
 
 def encontrar_indice_oficina(df):
     for i, value in df.iloc[:, 0].items():
@@ -1581,4 +1580,5 @@ with tab3:
                     if len(nombres_no_coinciden) > 0:
                         st.write('Los siguientes nombres pueden no coincidir:')
                         imprimir_no_coinciden(nombres_no_coinciden)
+
 
