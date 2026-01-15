@@ -1,4 +1,3 @@
-
 import pandas as pd
 import streamlit as st
 from collections import defaultdict
@@ -21,7 +20,7 @@ codigos_ausencias_no_descontables = (set([1,4,5,6,7,8,9,10,11,12,13,14,
                                           32,33,34,35,36,37,38,39,41,42,
                                           43,44,48,49,50,57,58,59,62,65,
                                           70,78,81,82,83,84,85,87,89,90,
-                                          91,100,102,103,104,110,111,120,
+                                          91,96,100,102,103,104,110,111,120,
                                           121,130,131,140,141,500,501,502,
                                           504,505,506,601,602,603,772,773,
                                           774,777,780,781,783,784,785,788,
@@ -71,7 +70,7 @@ def indexar_hojas_excel(planilla_csv):
             tiene_forma_planilla = df.shape[1] > 30
             es_planilla.append(tiene_forma_planilla)
         except Exception as e:
-            st.error(f"⚠️ Error leyendo hoja '{hoja}': {e}. Reportar con el equipo de desarrollo.")
+            st.error(f"⚠️ Error leyendo hoja '{hoja}': {e}. Reportar con el equipo.")
             st.stop()
 
     # Clasificar hojas
@@ -176,7 +175,7 @@ def transformar_hhee_a_csv(df: pd.DataFrame):
     for col in numeric_cols:
         summary_final[col] = (
             summary_final[col]
-                .astype(str)          # por si vienen como object/float/string
+                .astype(str) # por si vienen como object/float/string
                 .str.replace(",", ".", regex=False)  # reemplaza coma decimal si aparece
         )
         summary_final[col] = pd.to_numeric(summary_final[col], errors="coerce").fillna(0)
@@ -229,6 +228,7 @@ def transformar_ausencias_a_dict(ausencias) -> dict:
     donde dias es una lista de numeros de los dias en 
     que esa persona estuvo ausente.
     '''
+    # Leemos el archivo crudo de ausencias que tira el sistema fila por fila
     df_raw = pd.read_excel(ausencias)
 
     oficina = None
@@ -236,7 +236,7 @@ def transformar_ausencias_a_dict(ausencias) -> dict:
     legajo = None
 
     rows = []
- 
+    
     for _, row in df_raw.iterrows():
         primera_col = str(row[0]).strip() if pd.notna(row[0]) else ""
 
@@ -260,17 +260,31 @@ def transformar_ausencias_a_dict(ausencias) -> dict:
             primer_dia = row[0]
             ultimo_dia = row[1]
             motivo_raw = row[4] if len(row) > 4 else None
+
             nro_motivo = (
                 motivo_raw.split("-")[0].strip()
                 if isinstance(motivo_raw, str) and "-" in motivo_raw
                 else None
             )
 
-            rows.append([oficina, legajo, empleado, primer_dia, ultimo_dia, nro_motivo])
-    
-    df = pd.DataFrame(rows, columns=["oficina","legajo", "empleado", "dia_inicio", "dia_fin", "nro_motivo"])
+            nombre_motivo = (
+                motivo_raw.split("-")[1].strip()
+                if isinstance(motivo_raw, str) and "-" in motivo_raw
+                else None
+            )
+
+
+            rows.append([oficina, legajo, empleado, primer_dia, ultimo_dia, nro_motivo, nombre_motivo])
+
+    # Armamos un dataframe en base a los datos recolectados
+    df = pd.DataFrame(rows, columns=["oficina","legajo", "empleado", "dia_inicio", "dia_fin", "nro_motivo","nombre_motivo"])
+
+    # Normalizamos el dataframe
+    # legajos que sean de 4 a cinco digitos y de tipo string,
+    # las fechas se cambian para que dentro del mes anterior al vigente sean un numero del 1 al 31
+    # el nro_motivo es de tipo int
+    # nos quedamos con las ausencias que correspondan a dias que no deberían cobrar horas extras (porque faltaron, porque era feriado, etc)
     df["legajo"] = df["legajo"].astype(str).str.lstrip("0")
-    
     cambiar_fechas(df)
     df["nro_motivo"] = df["nro_motivo"].astype(int)
     df = df[~df["nro_motivo"].isin(codigos_ausencias_no_descontables)]
@@ -278,12 +292,15 @@ def transformar_ausencias_a_dict(ausencias) -> dict:
     st.write(f"Esta es la planilla de ausencias")
     st.write(df)
 
-    legajo_dict = defaultdict(lambda: {"nombre": None, "dias": []})
+    # se arma un diccionario de legajo, y los dias en los que faltó, junto con el motivo que corresponda
+    legajo_dict = defaultdict(lambda: {"nombre": None, "dias": [], "motivos": []})
     
     for _, row in df.iterrows():
         legajo = str(row["legajo"])
         nombre = row["empleado"]
         oficina = row["oficina"]
+        nro_motivo = row["nro_motivo"]
+        motivo = row["nombre_motivo"]
         if int(row["dia_fin"]) == 30:
             dias = list(range(int(row["dia_inicio"]), int(row["dia_fin"]) + 2))
         else:
@@ -292,10 +309,7 @@ def transformar_ausencias_a_dict(ausencias) -> dict:
         legajo_dict[legajo]["nombre"] = nombre
         legajo_dict[legajo]["oficina"] = oficina
         legajo_dict[legajo]["dias"].extend(dias)
-    
-    # opcional: eliminar duplicados y ordenar
-    for v in legajo_dict.values():
-        v["dias"] = sorted(set(v["dias"]))
+        legajo_dict[legajo]["motivos"].extend([f"{nro_motivo}-{motivo}" for _ in range(len(dias))])
 
     return dict(legajo_dict)
 
@@ -367,7 +381,7 @@ def limpiar_nombre(nombre):
     nombre = re.sub(' +',' ',nombre) # idem 
     return nombre.split(' ')
 
-def son_similares(nombre1, nombre2, umbral=0.8):
+def son_similares(nombre1, nombre2, umbral=0.85):
     ratio = difflib.SequenceMatcher(None, nombre1, nombre2).ratio()
     return ratio >= umbral
 
@@ -386,16 +400,17 @@ def reportar_inconsistencias(ausencias_ofi,planilla_hhee):
     '''
     hhee = planilla_hhee
     inconsistencias_ausencias = []
-    nombres_distintos = []
-    #faltaría filtrar antes si hay legajos repetidos!!!!!!
+
     legajos_planilla = set(hhee["legajo"].unique().tolist())
     for legajo in ausencias_ofi.keys():
         legajo = str(legajo)
         if legajo in legajos_planilla:
-            for dia in ausencias_ofi[legajo]["dias"]:
+            # Chequeamos ausencias
+            motivos = ausencias_ofi[legajo]["motivos"]
+            for idx,dia in enumerate(ausencias_ofi[legajo]["dias"]):
                 # Para ese legajo si en algun día que estuvo ausente tiene horas extras, ponerlas en 0
                 if (hhee.loc[hhee["legajo"] == legajo, dia] > 0).any():
-                    inconsistencias_ausencias.append(f"Para {legajo} tenemos inconstencia el dia {dia}")
+                    inconsistencias_ausencias.append(f"Para {legajo} tenemos inconsistencia el día {dia} con motivo {motivos[idx]}.")
                     hhee.loc[hhee["legajo"] == legajo, dia] = 0
 
     st.write(f"Esta es la planilla de hhee después de ver inconsistencias")
@@ -406,9 +421,7 @@ def reportar_inconsistencias(ausencias_ofi,planilla_hhee):
         s = ""
         for x in inconsistencias_ausencias:
             s += "- " + x + "\n"
-        st.markdown(s)    
-
-
+        st.markdown(s)
 
 def diferencias_entre_planillas(df_1 : pd.DataFrame, df_2 : pd.DataFrame) -> pd.DataFrame:
    """
@@ -1580,5 +1593,3 @@ with tab3:
                     if len(nombres_no_coinciden) > 0:
                         st.write('Los siguientes nombres pueden no coincidir:')
                         imprimir_no_coinciden(nombres_no_coinciden)
-
-
