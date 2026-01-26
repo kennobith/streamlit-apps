@@ -47,6 +47,7 @@ def crear_df(df: pd.DataFrame) -> pd.DataFrame:
 
         tipo, dato = tipo_de_fila_cl(fila)
 
+        # VER ¿Y si tipo == 2?
         if tipo == 0:
             oficina_actual = dato
         elif tipo == 1:
@@ -55,7 +56,7 @@ def crear_df(df: pd.DataFrame) -> pd.DataFrame:
         
 
     df_res = pd.DataFrame({"Legajo": legajos, "Oficina": oficinas})
-    df_res = df_res[df_res["Oficina"] != 0]
+    df_res = df_res[df_res["Oficina"] != 0] # VER ¿por qué?
     df_res["Legajo"] = df_res["Legajo"].astype('Int64')
     df_res["Oficina"] = df_res["Oficina"].astype('Int64')
 
@@ -66,7 +67,7 @@ def leer_archivo_leg_of(nombre_archivo:str) -> pd.DataFrame:
     legajos_por_oficina = pd.read_excel(nombre_archivo)
 
     ultima_fila = legajos_por_oficina.shape[0]
-
+    # VER ¿por qué estas dimensiones?
     legajos_por_oficina = legajos_por_oficina.iloc[:ultima_fila - 1,:3]
 
     legajos_por_oficina.columns = ["Legajo", "Nombre", "Oficina"]
@@ -1494,17 +1495,11 @@ with tab1:
             oficinas_int = np.array(oficinas, dtype=int)
             df_legajos_oficina = df_legajos_oficina[df_legajos_oficina["Oficina"].isin(oficinas_int)]
 
-        no_encontrados = buscar_legajos(df_hhee, df_legajos_oficina)
+        legajos_no_encontrados = buscar_legajos(df_hhee, df_legajos_oficina)
 
-        if len(no_encontrados) > 0:
-        
+        if len(legajos_no_encontrados) > 0:
             st.write("Estos son los legajos no encontrados en la oficinas: ", oficinas_int)
-
-        
-            for legajo in no_encontrados:
-            
-
-                st.write("""-""", legajo)
+            imprimir_lista(legajos_no_encontrados)
 
         else:
         
@@ -1755,4 +1750,5 @@ with tab4:
 
                         if len(nombres_no_coinciden) > 0:
                             st.write('Los siguientes nombres pueden no coincidir:')
+
                             imprimir_no_coinciden(nombres_no_coinciden)
