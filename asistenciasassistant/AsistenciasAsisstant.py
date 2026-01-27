@@ -13,10 +13,19 @@ import io
 # CHEQUEO LEGAJOS #
 ###################
 
-#Antes de hacer todo los chequeos, hay que chequear si todos los legajos que manda la oficina son eectivamente,
+#Antes de hacer todo los chequeos, hay que chequear si todos los legajos que manda la oficina son efectivamente,
 #de la oficina correspondiente
 
-def tipo_de_fila_cl(fila):
+def tipo_de_fila_cl(fila:pd.Series) -> tuple[int,int]:
+    '''
+    Dado una fila del documento otorgado por las oficinas de HHEE determinamos si las filas nos dicen el número de la oficina, o en caso conttrario
+    los  datos de la persona.
+    
+    :param fila: Fila correspondiente al dataFrame de HHEE
+    :type fila: pd.Series
+    :return: Una tupla de int, donde el primer int corresponde al tipo de fila (0:oficina, 1:persona, 2:oficina(año != 2026)), el segundo int corresponde al dato de interés
+    :rtype: tuple[int, int]
+    '''
 
     if fila["Legajo"] == "OFICINA: ":
 
@@ -26,17 +35,25 @@ def tipo_de_fila_cl(fila):
         
         else:
 
-            return 2,0
+            return 2,0 #En caso de que no corresponda al año 2026, retornamos 2 y 0
     
     else:
 
         return 1, fila["Legajo"]
     
+    
 def crear_df(df: pd.DataFrame) -> pd.DataFrame:
-
+    '''
+    Recorremos todas las filas del dataFrame de legajos por oficina para armarlo con el legajo en la primer columna, y en la segunda columna la oficina la cual 
+    pertenece ese legajo, luego convertimos a int el número de oficina y el legajo
+    
+    :param df: dataFrame de legajos por oficina
+    :type df: pd.DataFrame
+    :return: dataFrame con los legajos en primer columna y las oficinas en la segunda columna
+    :rtype: DataFrame
+    '''
     cant_filas = df.shape[0]
     
-
     legajos = []
     oficinas = []
     oficina_actual = 0
@@ -47,36 +64,48 @@ def crear_df(df: pd.DataFrame) -> pd.DataFrame:
 
         tipo, dato = tipo_de_fila_cl(fila)
 
-        # VER ¿Y si tipo == 2?
         if tipo == 0:
             oficina_actual = dato
         elif tipo == 1:
             legajos.append(dato)
             oficinas.append(oficina_actual)
+    #Si la fila es de tipo 2 la ignoramos, no corresponde a este año
         
-
     df_res = pd.DataFrame({"Legajo": legajos, "Oficina": oficinas})
-    df_res = df_res[df_res["Oficina"] != 0] # VER ¿por qué?
+    df_res = df_res[df_res["Oficina"] != 0] #Filtramos porque los legajos no correspondientes al 2026 me quedaron con numero de oficina 0 (VER)
+    #Lo que pasa es que sigo iterando sobre las personas, lo unico que ignoro es el numero de  oficina, como todos los años que no son 2026 están al principio
+    # del dataFrame, me quedan los legajos con número de oficina 0
     df_res["Legajo"] = df_res["Legajo"].astype('Int64')
     df_res["Oficina"] = df_res["Oficina"].astype('Int64')
 
     return df_res
     
 def leer_archivo_leg_of(nombre_archivo:str) -> pd.DataFrame:
+    '''
+    Dado el nombre del archivo correspondiente a la lista de legajos por oficina, lo leemos como dataFrame, nos quedamos con las primeras 3 columnas
+    y renombramos las columnas
+    
+    :param nombre_archivo: Description
+    :type nombre_archivo: str
+    :return: dataFrame con las primeras 3 columnas correspondientes al legajo, nommbre de la persona y oficina a la que pertenece
+    :rtype: DataFrame
+    '''
     
     legajos_por_oficina = pd.read_excel(nombre_archivo)
 
     ultima_fila = legajos_por_oficina.shape[0]
-    # VER ¿por qué estas dimensiones?
-    legajos_por_oficina = legajos_por_oficina.iloc[:ultima_fila - 1,:3]
 
-    legajos_por_oficina.columns = ["Legajo", "Nombre", "Oficina"]
+    legajos_por_oficina = legajos_por_oficina.iloc[:ultima_fila - 1,:3] #Sacamos la ultima fila ya que corresponde al total de empleados
+    #Ademas agarramos las primeras 3 columnas que son las que nos interesan
+
+    legajos_por_oficina.columns = ["Legajo", "Nombre", "Oficina"] #Las renombramos
 
     df_res = crear_df(legajos_por_oficina)
 
     return df_res
 
 def leer_archivo_oficina(nombre_archivo_oficina:str) -> pd.DataFrame:
+    #No lo usamos
 
     df = pd.read_excel(nombre_archivo_oficina)
 
@@ -89,7 +118,16 @@ def leer_archivo_oficina(nombre_archivo_oficina:str) -> pd.DataFrame:
     return df
 
 def buscar_legajos(legajos_a_buscar: pd.DataFrame, legajos_oficina: pd.DataFrame) -> list[int]:
-
+    '''
+    Dado el dataFrame de HHEE cargados por la oficina, buscamos que efectivamente, todos los legajos pasados correspondan a esa oficina.
+    
+    :param legajos_a_buscar: dataFrame de HHEE con columna 'legajo'
+    :type legajos_a_buscar: pd.DataFrame
+    :param legajos_oficina: dataFrame creado por nosotros con columnas 'Legajo', 'Nombre' y 'Oficina'.
+    :type legajos_oficina: pd.DataFrame
+    :return: Lista de los legajos que no corresponden a la oficina
+    :rtype: list[int]
+    '''
     no_encontrados = []
 
     legajos = legajos_a_buscar.unique()
@@ -105,7 +143,7 @@ def buscar_legajos(legajos_a_buscar: pd.DataFrame, legajos_oficina: pd.DataFrame
 
         s = legajo_buscado == legajo
         
-        if s.any():
+        if s.any(): #Se usa porque es una serie
 
             continue
 
@@ -1484,22 +1522,34 @@ with tab1:
         #nro_oficina = archivo_hhee_oficina.name.split(".")[0]
         #nro_oficina = int(nro_oficina)
 
-        df_legajos_oficina = leer_archivo_leg_of(archivo_legajos_oficina)
+        df_legajos_oficina_original = leer_archivo_leg_of(archivo_legajos_oficina)
 
-        planilla_hhee = pd.read_excel(archivo_hhee_oficina)
+        resumen = indexar_hojas_excel(archivo_hhee_oficina)
+        #trabajamos con planilla_hhee
+        nombres_hojas = resumen["nombres_hojas"]
+        planilla_hhee = pd.read_excel(archivo_hhee_oficina, sheet_name = nombres_hojas["hoja_planilla"])
 
         df_hhee_norm = normalizar_planilla_hhee(planilla_hhee)
         df_hhee = df_hhee_norm["legajo"].astype('Int64')
         #legajos = df_hhee_norm["legajo"].unique()
         if oficinas:
             oficinas_int = np.array(oficinas, dtype=int)
-            df_legajos_oficina = df_legajos_oficina[df_legajos_oficina["Oficina"].isin(oficinas_int)]
+            df_legajos_oficina = df_legajos_oficina_original[df_legajos_oficina_original["Oficina"].isin(oficinas_int)]
 
-        legajos_no_encontrados = buscar_legajos(df_hhee, df_legajos_oficina)
+        no_encontrados = buscar_legajos(df_hhee, df_legajos_oficina)
 
-        if len(legajos_no_encontrados) > 0:
-            st.write("Estos son los legajos no encontrados en la oficinas: ", oficinas_int)
-            imprimir_lista(legajos_no_encontrados)
+        if len(no_encontrados) > 0:
+        
+            st.write("Estos son los legajos que no pertenecen a la oficina de la planilla:")
+
+        
+            for legajo in no_encontrados:
+
+                df_legajo = df_legajos_oficina_original[df_legajos_oficina_original["Legajo"] == legajo]
+                
+            
+
+                st.write("""-""", legajo, " pertenece a la/s oficina/s ",df_legajo)
 
         else:
         
@@ -1750,5 +1800,4 @@ with tab4:
 
                         if len(nombres_no_coinciden) > 0:
                             st.write('Los siguientes nombres pueden no coincidir:')
-
                             imprimir_no_coinciden(nombres_no_coinciden)
