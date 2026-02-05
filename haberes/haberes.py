@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import streamlit as st
+import re
+
 
 
 #--------- LECTURA de archivos ---------------------
@@ -58,6 +60,7 @@ def limpieza_decreto(df: pd.DataFrame) -> dict:
     '''
 
     #TODO sacar el diccionario, al final no lo uso
+    patron = r"DTO\.\s*(\d+/\d+)"
 
     decretos = []
     cant_prod = df.shape[0]
@@ -73,11 +76,11 @@ def limpieza_decreto(df: pd.DataFrame) -> dict:
             #que archivo fue sacado
             
         else:
-            decreto_prod_split = leyenda.split(" ")
-            if len(decreto_prod_split) > 1: #Si cuando hacemos el split nos queda de longitud mayor o igual a dos, indexamos en 1 para obtenerlo,
+            match = re.search(patron, leyenda)
+            if match: #Si cuando hacemos el split nos queda de longitud mayor o igual a dos, indexamos en 1 para obtenerlo,
                 # en cas contrario, decimos que no podemos extraer el decreto
 
-                decreto_prod = decreto_prod_split[1]
+                decreto_prod = match.group(1)
                 decretos.append(leyenda)
                 df.loc[i,"Leyenda"] = decreto_prod
                 
@@ -151,7 +154,7 @@ st.title("📝 PRODUCTIVIDADES")
 
 st.divider()
 
-tab1,tab2 = st.tabs(["Subir archivos", "Ver resultados"])
+tab1,tab2,tab3 = st.tabs(["Subir archivos", "Sin comparar","Resultados"])
 
 with tab1:
 
@@ -159,7 +162,7 @@ with tab1:
     #un archivo csv corrrespondiente a ese decreto, en caso contrario avisa que ningún csv correspondiente al decreto fue subido
     agree = st.checkbox("Comparar todos los decretos del archivo excel de productividades")
 
-    st.markdown("Subir los archivos de productividades correspondientes a lo arrojado por el sistema")
+    st.markdown("Subir los archivos de productividades arrojados por el sistema")
 
     archivos_excel = st.file_uploader("Seleccionar archivo", type = "xls",key = "productividades",accept_multiple_files=True)
     #Acepta multiples, concatenarlos en ese caso (asumimos que las columnas y los nombres son iguales)
@@ -192,7 +195,8 @@ with tab2:
         
         df_excel_final = pd.concat(dfs_excel,ignore_index = True)
         df_excel_sin_procesar = df_excel_final[df_excel_final["Nombre original"] == ""] #Filtramos el dataFrame por los decretos que no pudimos obtener
-        st.write("Esta es la lista de productividades que no pudo ser procesada debido a falta de información en el decreto o porque no corresponde a un decreto")
+        st.write("Esta es la lista de productividades que no pudo ser procesada debido al formato de las leyendas")
+        df_excel_sin_procesar = df_excel_sin_procesar.drop(columns = ["Nula1","Inicio","Nula2","Fin","Cantidad","Base","Porcentaje","Indicativo","Nombre original"])
         st.write(df_excel_sin_procesar)
         
         df_excel_final = df_excel_final[df_excel_final["Nombre original"] != ""]
@@ -227,6 +231,7 @@ with tab2:
         decreto_original_csv = []
         decretos_comp_excel = []
         decretos_comp_csv = []
+        no_existe_csv = []
 
 
         if agree:
@@ -241,7 +246,8 @@ with tab2:
                 df_excel_decreto = df_excel_final[df_excel_final["Leyenda"] == decreto_excel]
 
                 if df_csv_decreto.shape[0] == 0:
-                    st.write(f"No fue cargado ningún csv correspondiente al decreto {decreto_excel}")
+                    no_existe_csv.append(decreto_excel)
+                    #st.write(f"No fue cargado ningún csv correspondiente al decreto {decreto_excel}")
 
                 else:
 
@@ -251,27 +257,25 @@ with tab2:
 
             df_diferencias_excel = pd.DataFrame({"Legajo": legajos_comp_excel, "Importe": importes_comp_excel,"Decreto":decretos_comp_excel,"Decreto original":decreto_original_excel}) 
             df_diferencias_csv = pd.DataFrame({"Legajo": legajos_comp_csv, "Importe": importes_comp_csv,"Decreto":decretos_comp_csv,"Decreto original":decreto_original_csv})
+
+            st.write("Estos son los legajos e importes que no pudieron ser matcheados debido a que su CSV no fue subido:")
+
+            df_no_subidos = df_excel_final[df_excel_final["Leyenda"].isin(no_existe_csv)]
+            df_no_subidos = df_no_subidos.drop(columns = ["Nula1","Inicio","Nula2","Fin","Cantidad","Base","Porcentaje","Indicativo","Nombre original"])
+
+            st.write(df_no_subidos)
                     
 
                     #df_diferencias_csv = pd.DataFrame({"Legajo": legajos_comp_csv, "Importe" : importes_comp_csv,"Decreto original":decreto_original_csv})
 
                     #df_diferencias_excel = pd.DataFrame({"Legajo": legajos_comp_excel, "Importe" : importes_comp_excel,"Decreto original":decreto_original_excel})
 
-            
-
-
-
         else:
 
             decretos_unicos_csv = df_csv_final["Decreto"].unique()
 
-            
-            
-
             for decreto_csv in decretos_unicos_csv:
-
-
-
+                
                 df_csv_decreto = df_csv_final[df_csv_final["Decreto"] == decreto_csv]
                 df_excel_decreto = df_excel_final[df_excel_final["Leyenda"] == decreto_csv]
 
@@ -282,27 +286,37 @@ with tab2:
             df_diferencias_excel = pd.DataFrame({"Legajo": legajos_comp_excel, "Importe": importes_comp_excel,"Decreto":decretos_comp_excel,"Decreto original":decreto_original_excel}) 
             df_diferencias_csv = pd.DataFrame({"Legajo": legajos_comp_csv, "Importe": importes_comp_csv,"Decreto":decretos_comp_csv,"Decreto original":decreto_original_csv})
 
+        
+
+        df_diferencias_excel.columns = ["Legajo","Importe","Decreto","Leyenda original"]
+        df_diferencias_csv.columns = ["Legajo","Importe","Decreto","Nombre archivo original"]
+
+        with tab3:
+
+            diferencias = pd.concat([df_diferencias_excel["Decreto"], df_diferencias_csv["Decreto"]]).unique().tolist()
+
+            if(len(diferencias)>0):
+
+                tabs = st.tabs(diferencias)
+
+                for i in range(len(diferencias)):
+
+                    with tabs[i]:
+
+                        df_diferencias_excel_dec = df_diferencias_excel[df_diferencias_excel["Decreto"] == diferencias[i]]
+                        df_diferencias_csv_dec = df_diferencias_csv[df_diferencias_csv["Decreto"] == diferencias[i]]
+
+                        if df_diferencias_excel_dec.shape[0] != 0:
+                            st.write("Los siguientes importes de la planilla del sistema no fueron encontrados en ninguno de los CSVs subidos: ")
+                            st.write(df_diferencias_excel_dec)
+                        
+                        if df_diferencias_csv_dec.shape[0] != 0:
+                            st.write("Los siguientes importes de los CSVs subidos no fueron encontrados en ninguna de las planillas del sistema subidas: ")
+                            st.write(df_diferencias_csv_dec)
+
+            else:
+                st.markdown("No se encontraron diferencias")
 
 
-        diferencias = pd.concat([df_diferencias_excel["Decreto"], df_diferencias_csv["Decreto"]]).unique().tolist()
 
-
-
-        if(len(diferencias)>0):
-
-            tabs = st.tabs(diferencias)
-
-            for i in range(len(diferencias)):
-
-                with tabs[i]:
-
-                    df_diferencias_excel_dec = df_diferencias_excel[df_diferencias_excel["Decreto"] == diferencias[i]]
-                    df_diferencias_csv_dec = df_diferencias_csv[df_diferencias_csv["Decreto"] == diferencias[i]]
-
-                    if df_diferencias_excel_dec.shape[0] != 0:
-                        st.write("Lo siguientes importes de la planilla del sistema no fueron encontrados en ninguno de los csvs subido: ")
-                        st.write(df_diferencias_excel_dec)
-                    
-                    if df_diferencias_csv_dec.shape[0] != 0:
-                        st.write("Los siguientes importes de los csvs subidos no fueron encontrados en ninguno de las planillas del sistema subidas: ")
-                        st.write(df_diferencias_csv_dec)
+       
