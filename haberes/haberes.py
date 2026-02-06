@@ -60,7 +60,7 @@ def limpieza_decreto(df: pd.DataFrame) -> dict:
     '''
 
     #TODO sacar el diccionario, al final no lo uso
-    patron = r"DTO\.\s*(\d+/\d+)"
+    patron = r"DTO\.?\s*(\d+/\d+)"
 
     decretos = []
     cant_prod = df.shape[0]
