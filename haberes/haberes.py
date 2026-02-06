@@ -62,6 +62,7 @@ def limpieza_decreto(df: pd.DataFrame) -> dict:
     #TODO sacar el diccionario, al final no lo uso
     patron = r"DTO\.?\s*(\d+/\d+)"
 
+
     decretos = []
     cant_prod = df.shape[0]
 
@@ -308,11 +309,18 @@ with tab2:
 
                         if df_diferencias_excel_dec.shape[0] != 0:
                             st.write("Los siguientes importes de la planilla del sistema no fueron encontrados en ninguno de los CSVs subidos: ")
-                            st.write(df_diferencias_excel_dec)
+
+                            styler_excel = df_diferencias_excel_dec.style.format({
+                            'Importe': lambda x: '{:,.2f}'.format(x).replace(',', 'X').replace('.', ',').replace('X', '.')
+                            })
+                            st.write(styler_excel)
                         
                         if df_diferencias_csv_dec.shape[0] != 0:
                             st.write("Los siguientes importes de los CSVs subidos no fueron encontrados en ninguna de las planillas del sistema subidas: ")
-                            st.write(df_diferencias_csv_dec)
+                            styler_csv = df_diferencias_csv_dec.style.format({
+                            'Importe': lambda x: '{:,.2f}'.format(x).replace(',', 'X').replace('.', ',').replace('X', '.')
+                            })
+                            st.write(styler_csv)
 
             else:
                 st.markdown("No se encontraron diferencias")
