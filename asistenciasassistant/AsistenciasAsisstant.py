@@ -1547,9 +1547,9 @@ with tab1:
 
                 df_legajo = df_legajos_oficina_original[df_legajos_oficina_original["Legajo"] == legajo]
                 if(df_legajo.shape[0] > 0):
-                    st.write("""-""", legajo, " pertenece a la/s oficina/s ",df_legajo)
+                    st.write("""-""", "Este legajo: ",legajo, " pertenece a la/s oficina/s ",df_legajo)
                 else:
-                    st.write("Este legajo no fue encontrado en ninguna oficina")
+                    st.write("""-""","Este legajo: ",legajo, " no fue encontrado en ninguna oficina")
 
         else:
         
@@ -1801,4 +1801,5 @@ with tab4:
                         if len(nombres_no_coinciden) > 0:
                             st.write('Los siguientes nombres pueden no coincidir:')
                             imprimir_no_coinciden(nombres_no_coinciden)
+
 
