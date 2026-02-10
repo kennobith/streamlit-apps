@@ -1586,11 +1586,11 @@ with tab2:
         st.write(df_diferencias)
 
         diferencias_csv = df_diferencias.to_csv(index=False).encode('latin1')
-        resumen_planilla_final = eliminar_legajo_sin_hhee(resumen_planilla) #Eliminamos los legajos que no tengan horas extras
-        csv = resumen_planilla_final.to_csv(index=False).encode('latin1')
+        resumen_planilla_final = eliminar_legajo_sin_hhee(resumen_planilla) #Eliminamos los legajos que no tengan horas extras ACÁ hay un BUG 305
+        csv = df_despues.to_csv(index=False).encode('latin1')
         st.download_button(
             label="Descargar CSV",
-            data=df_despues,
+            data=csv,
             file_name=f"{nombre_archivo}.csv",
             mime="text/csv",
             key='download_csv_no_index'
