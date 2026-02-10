@@ -1590,7 +1590,7 @@ with tab2:
         csv = resumen_planilla_final.to_csv(index=False).encode('latin1')
         st.download_button(
             label="Descargar CSV",
-            data=csv,
+            data=df_despues,
             file_name=f"{nombre_archivo}.csv",
             mime="text/csv",
             key='download_csv_no_index'
@@ -1801,5 +1801,6 @@ with tab4:
                         if len(nombres_no_coinciden) > 0:
                             st.write('Los siguientes nombres pueden no coincidir:')
                             imprimir_no_coinciden(nombres_no_coinciden)
+
 
 
