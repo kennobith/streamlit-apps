@@ -295,10 +295,9 @@ def transformar_hhee_a_csv(df: pd.DataFrame):
     # 4) Renombrar las columnas según tu nomenclatura solicitada
     # Identificar los valores únicos en orden de aparición
     unique_types = list(df['tipo_hora'].dropna().unique())
-    unique_types = unique_types[0:3]
     # Asegurar que tengamos exactamente 3 tipos
-    if len(unique_types) < 3:
-        st.error("Advertencia: se esperaban exactamente 3 tipos de hora. Se detectaron menos")
+    if len(unique_types) != 3:
+        st.error(f"Advertencia: se esperaban exactamente 3 tipos de hora. Se detectó un número distinto. Estas son los tipos de horas halladas: {unique_types}.")
         st.stop()
 
     # Mapeo universal según orden
@@ -1801,6 +1800,7 @@ with tab4:
                         if len(nombres_no_coinciden) > 0:
                             st.write('Los siguientes nombres pueden no coincidir:')
                             imprimir_no_coinciden(nombres_no_coinciden)
+
 
 
 
